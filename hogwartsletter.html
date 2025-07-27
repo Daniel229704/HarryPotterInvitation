@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hogwarts Acceptance Letter</title>
+    
+    <style>
+        @font-face {
+            font-family: 'Homemade Apple';
+            src: url('HomemadeApple-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }/* GEÄNDERT: Eule ist größer und fliegt zentraler */
+        @keyframes owl-flight {
+            0% {
+                transform: translate(150vw, -100px) scale(0.9) rotate(5deg); /* Startposition */
+                opacity: 0;
+            }
+            25% {
+                transform: translate(75vw, -150px) scale(1) rotate(3deg); /* Zwischenposition */
+                opacity: 0.8;
+            }
+            50% {
+                transform: translate(0vw, -200px) scale(1.2) rotate(0deg); /* Zentrum, größer */
+                opacity: 1;
+            }
+            75% {
+                transform: translate(-75vw, -250px) scale(1) rotate(-2deg); /* Zwischenposition */
+                opacity: 0.8;
+            }
+            100% {
+                transform: translate(-150vw, -300px) scale(0.9) rotate(-5deg); /* Endposition */
+                opacity: 0;
+            }
+        }
+
+
+        @keyframes brief-fly-in {
+            from {
+                transform: translateX(150vw);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        #animation-wrapper {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            /* Startgröße für geschlossenen Brief */
+            width: 700px;
+            height: 450px;
+            box-shadow: none;
+            transition: width 1s ease-in-out, height 1s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+            /* Flexiblere Max-Größen für kleinere Bildschirme */
+            max-width: 95vw;
+            max-height: 95vh;
+        }
+
+        #animation-wrapper.is-visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #animation-wrapper.is-open {
+            /* GEÄNDERT: Flexible Höhe für den geöffneten Brief */
+            width: 900px;
+            height: 90vh; /* Setzt die Höhe auf 90% der Viewport-Höhe */
+            max-height: 1300px; /* Begrenzt die maximale Höhe auf den ursprünglichen Wert */
+            /* Ensure it stays centered and accounts for potential scrollbar */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #closed-envelope {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('parchment.png');
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #c0b299;
+            opacity: 0;
+
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+
+            /* GEÄNDERT: Brief kommt später, wenn die Eule fast verschwunden ist */
+            animation: brief-fly-in 1.25s ease-out 1.5s forwards;
+            transition: opacity 0.5s ease-in-out;
+            cursor: default;
+        }
+
+        #closed-envelope.is-ready {
+            opacity: 1;
+            cursor: pointer;
+        }
+
+        #animation-wrapper.is-open #closed-envelope {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .closed-crest, .closed-seal {
+            position: absolute;
+        }
+
+        .closed-crest {
+            width: 120px;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .closed-seal {
+            width: 80px;
+            top: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .letter-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%; /* Wichtig: Füllt die Höhe des Eltern-Containers */
+            opacity: 0;
+            visibility: hidden;
+            background-image: url('parchment.png');
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #c0b299;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+            padding: 80px 100px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+            transition: opacity 1.5s ease-in-out 0.5s;
+            /* NEU HINZUGEFÜGT: Ermöglicht Scrollen innerhalb des Briefes */
+            overflow-y: auto;
+            /* Optional: Scrollbar-Stil für WebKit-Browser */
+            -webkit-overflow-scrolling: touch; /* Für flüssigeres Scrollen auf iOS */
+        }
+
+        #animation-wrapper.is-open .letter-container {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #owl {
+            position: absolute;
+            top: 50%; /* Positioniert das Video vertikal zentriert */
+            left: 50%; /* Positioniert das Video horizontal zentriert */
+            transform: translate(-50%, -50%); /* Korrigiert die Position, damit der Mittelpunkt des Videos genau in der Mitte ist */
+            width: 2500px;
+            height: auto;
+            z-index: 2;
+            /* Animation entfernen, damit das Video statisch bleibt */
+            /* animation: owl-flight 2.5s forwards; */
+            animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            overflow: auto; /* Verhindert Scrollbalken auf der Body-Ebene */
+            font-family: 'Cormorant Garamond', serif;
+            color: #503D3D;
+        }
+
+        #input-section {
+            text-align: center;
+            z-index: 3;
+            position: relative; /* Wichtig, damit es über anderen Elementen liegt */
+            background-color: #fff;
+            padding: 30px; /* Mehr Polsterung */
+            border-radius: 8px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15); /* Deutlicherer Schatten */
+            width: 400px; /* Feste Breite für die Maske */
+            max-width: 90%; /* Responsiver auf kleineren Bildschirmen */
+            box-sizing: border-box; /* Polsterung in Breite einbeziehen */
+        }
+
+        #input-section h1 {
+            font-family: 'Great Vibes', cursive; /* Passende Schriftart */
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            color: #503D3D;
+        }
+
+        #input-section p {
+            font-size: 1.1em;
+            margin-bottom: 25px;
+        }
+
+        #input-section label {
+            display: block; /* Label auf eigener Zeile */
+            margin-bottom: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #503D3D;
+        }
+
+        #input-section input {
+            padding: 12px; /* Größeres Inputfeld */
+            border: 1px solid #c0b299;
+            border-radius: 6px; /* Abgerundetere Ecken */
+            margin-bottom: 20px;
+            width: calc(100% - 24px); /* Breite anpassen */
+            font-size: 1.1em;
+            box-sizing: border-box;
+        }
+
+        #input-section button {
+            background-color: #a0522d; /* Sienna-ähnlicher Farbton */
+            color: white;
+            padding: 12px 25px; /* Größerer Button */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        #input-section button:hover {
+            background-color: #8b4513; /* Dunkleres Sienna */
+            transform: translateY(-2px); /* Leichter Schwebeeffekt */
+        }
+
+        .crest {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: auto;
+            z-index: 1;
+        }
+
+        .recipient-address {
+            margin-left: 0px;
+            margin-top: 280px;
+            margin-bottom: 50px;
+            font-family: 'Great Vibes', cursive;
+            font-size: 2.2em;
+            font-style: normal;
+            line-height: 1.2;
+            color: #503D3D;
+        }
+
+        .salutation {
+            margin-bottom: 30px;
+            font-family: 'Great Vibes', cursive;
+            font-size: 2.2em;
+            font-style: normal;
+            color: #503D3D;
+        }
+
+        .letter-body {
+            font-family: 'Great Vibes', cursive;
+            font-size: 1.9em;
+            text-align: justify;
+            margin-bottom: 40px;
+            line-height: 1.3;
+            color: #503D3D;
+        }
+
+        .closing {
+            font-family: 'Great Vibes', cursive;
+            font-size: 1.9em;
+            margin-bottom: 10px;
+            color: #503D3D;
+        }
+
+        .signature {
+            font-family: 'Homemade Apple', cursive;
+            font-size: 2.5em;
+            margin-top: 5px;
+            margin-bottom: 0px;
+            color: #6E5252;
+        }
+
+        .title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 1.9em;
+            color: #503D3D;
+        }
+
+        .seal {
+            /* ÄNDERUNG HIER: Von 'absolute' zu 'relative' */
+            position: relative; /* Lässt das Siegel mit dem Inhalt scrollen */
+            bottom: auto; /* Entfernt die feste Positionierung von unten */
+            right: auto; /* Entfernt die feste Positionierung von rechts */
+            /* Neue Positionierung innerhalb des Flex-Containers */
+            margin-top: auto; /* Schiebt das Siegel an das Ende des Flex-Containers */
+            margin-bottom: 30px; /* Fügt etwas Abstand nach unten hinzu */
+            align-self: flex-end; /* Richtet das Siegel am rechten Rand des Flex-Containers aus */
+            width: 150px;
+            height: auto;
+        }
+
+        /* Styles für die neue Ausrüstungsliste-Seite */
+        #items-list-container {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 900px; /* Gleiche Breite wie geöffneter Brief */
+            /* GEÄNDERT: Flexible Höhe für die Ausrüstungsliste */
+            height: 90vh; /* Setzt die Höhe auf 90% der Viewport-Höhe */
+            max-height: 1300px; /* Begrenzt die maximale Höhe auf den ursprünglichen Wert */
+            background-image: url('parchment.png');
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #c0b299;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+            padding: 60px 80px; /* Etwas mehr Rand oben/unten */
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+            overflow-y: auto; /* Ermöglicht Scrollen innerhalb des Containers */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease-in-out;
+            color: #503D3D;
+            font-family: 'Cormorant Garamond', serif;
+            /* Optional: Scrollbar-Stil für WebKit-Browser */
+            -webkit-overflow-scrolling: touch; /* Für flüssigeres Scrollen auf iOS */
+        }
+
+        #items-list-container.is-visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #items-list-container h2 {
+            font-family: 'Great Vibes', cursive;
+            font-size: 3.2em; /* Etwas größerer Titel */
+            text-align: center;
+            margin-bottom: 30px;
+            color: #503D3D;
+            border-bottom: 2px solid #a0522d; /* Dezente Trennlinie */
+            padding-bottom: 15px;
+        }
+
+        #items-list-container h3 {
+            font-family: 'Great Vibes', cursive;
+            font-size: 2.4em; /* Überschrift für Abschnitte */
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #6E5252;
+        }
+
+        #items-list-container ul {
+            list-style: none; /* Entfernt Standard-Bullet-Points */
+            padding: 0;
+            margin: 0;
+        }
+
+        #items-list-container li {
+            font-family: 'Great Vibes', cursive;
+            font-size: 1.9em; /* Etwas größere Schrift */
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 35px; /* Platz für benutzerdefinierten Bullet-Point */
+        }
+
+        #items-list-container li:before {
+            content: '•'; /* Benutzerdefinierter Bullet-Point */
+            position: absolute;
+            left: 0;
+            color: #a0522d; /* Farbe des Bullet-Points */
+            font-size: 1.4em; /* Größerer Punkt */
+            line-height: 1;
+        }
+
+        #items-list-container p {
+            font-family: 'Great Vibes', cursive;
+            font-size: 1.9em;
+            margin-top: 20px;
+            text-align: center;
+            color: #503D3D;
+        }
+
+        #items-list-container .note {
+            font-family: 'Cormorant Garamond', serif; /* Etwas andere Schrift für Hinweise */
+            font-size: 1.2em;
+            text-align: center;
+            margin-top: 30px;
+            color: #7a6868;
+            font-style: italic;
+        }
+
+
+        #continue-to-items-button {
+            position: relative; /* GEÄNDERT: Macht den Button klebrig am unteren Rand des Scrollbereichs */
+            bottom: 20px; /* Abstand vom unteren Rand */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #a0522d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-family: 'Cormorant Garamond', serif;
+            transition: background-color 0.3s ease;
+            opacity: 0; /* Standardmäßig versteckt */
+            pointer-events: none;
+            z-index: 10; /* Stellt sicher, dass der Button über dem Inhalt liegt */
+            margin-top: 20px; /* Fügt etwas Platz über dem Button hinzu, falls er klebt */
+            align-self: center; /* Zentriert den Button innerhalb des Flex-Containers */
+        }
+
+        #continue-to-items-button.is-visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #continue-to-items-button:hover {
+            background-color: #8b4513;
+        }
+
+        /* --- MEDIA QUERIES FÜR RESPONSIVES DESIGN --- */
+
+        /* Kleine Bildschirme (Handy Hochformat, z.B. bis 600px Breite) */
+        @media (max-width: 600px) {
+            body {
+                overflow-y: auto; /* Auf Handys scrollen erlauben, falls nötig */
+                align-items: flex-start; /* Inhalt oben ausrichten, um Platz zu sparen */
+                padding: 20px 0; /* Etwas Polsterung oben/unten */
+            }
+
+            #input-section {
+                width: 95%; /* Fast volle Breite */
+                padding: 20px;
+                margin-top: 50px; /* Etwas Abstand vom oberen Rand */
+            }
+
+            #input-section h1 {
+                font-size: 1.8em;
+            }
+
+            #input-section p {
+                font-size: 0.9em;
+            }
+
+            #input-section input,
+            #input-section button {
+                font-size: 1em;
+                padding: 10px;
+            }
+
+            /* Animation Wrapper und Brief-Container anpassen */
+            #animation-wrapper,
+            #animation-wrapper.is-open,
+            #items-list-container {
+                width: 95vw; /* Breite basierend auf Viewport-Breite */
+                height: 90vh; /* Höhe basierend auf Viewport-Höhe */
+                padding: 40px 30px; /* Kleinere Polsterung */
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%); /* Immer zentriert */
+                max-height: 95vh; /* Sicherstellen, dass es nicht über den Viewport hinausgeht */
+            }
+
+            .letter-container {
+                padding: 40px 30px; /* Kleinere Polsterung im Brief */
+            }
+
+            .crest {
+                width: 120px; /* Kleineres Wappen im Brief */
+                top: 15px; /* Position anpassen */
+            }
+
+            .recipient-address {
+                margin-top: 150px; /* Position anpassen */
+                font-size: 1.2em;
+            }
+
+            .salutation {
+                font-size: 1.2em;
+            }
+
+            .letter-body {
+                font-size: 1.1em;
+            }
+
+            .closing, .signature, .title {
+                font-size: 1.2em;
+            }
+            .signature {
+                font-size: 1.8em; /* Signatur bleibt etwas größer */
+            }
+
+
+            .seal {
+                width: 100px; /* Kleineres Siegel */
+                bottom: 20px;
+                right: 20px;
+            }
+
+            #continue-to-items-button {
+                font-size: 1em;
+                padding: 8px 15px;
+                bottom: 10px; /* Etwas höher auf kleinen Bildschirmen */
+            }
+
+            /* Ausrüstungsliste anpassen */
+            #items-list-container h2 {
+                font-size: 2em;
+                margin-bottom: 20px;
+            }
+            #items-list-container h3 {
+                font-size: 1.5em;
+                margin-top: 20px;
+                margin-bottom: 10px;
+            }
+            #items-list-container li {
+                font-size: 1.1em;
+                padding-left: 25px;
+                margin-bottom: 5px;
+            }
+            #items-list-container li:before {
+                font-size: 1.1em;
+            }
+            #items-list-container p {
+                font-size: 1.1em;
+                margin-top: 15px;
+            }
+            #items-list-container .note {
+                font-size: 1em;
+                margin-top: 20px;
+            }
+        }
+
+        /* Mittlere Bildschirme (Tablets Hochformat, kleine Laptops, z.B. 601px bis 900px Breite) */
+        @media (min-width: 601px) and (max-width: 900px) {
+            #input-section {
+                width: 80%;
+                padding: 25px;
+            }
+
+            #animation-wrapper,
+            #animation-wrapper.is-open,
+            #items-list-container {
+                width: 85vw;
+                height: 90vh; /* Flexibel anpassen */
+                max-height: 95vh; /* Sicherstellen, dass es nicht über den Viewport hinausgeht */
+                padding: 60px 60px;
+            }
+
+            .letter-container {
+                padding: 60px 60px;
+            }
+
+            .crest {
+                width: 150px;
+                top: 20px;
+            }
+
+            .recipient-address {
+                margin-top: 200px;
+                font-size: 1.7em;
+            }
+
+            .salutation {
+                font-size: 1.7em;
+            }
+
+            .letter-body {
+                font-size: 1.4em;
+            }
+
+            .closing, .signature, .title {
+                font-size: 1.5em;
+            }
+            .signature {
+                font-size: 2.2em;
+            }
+
+            .seal {
+                width: 120px;
+                bottom: 30px;
+                right: 30px;
+            }
+
+            #continue-to-items-button {
+                font-size: 1.1em;
+                padding: 9px 18px;
+                bottom: 20px; /* Etwas höher auf Tablets */
+            }
+
+            /* Ausrüstungsliste anpassen */
+            #items-list-container h2 {
+                font-size: 2.5em;
+            }
+            #items-list-container h3 {
+                font-size: 1.9em;
+            }
+            #items-list-container li {
+                font-size: 1.4em;
+            }
+            #items-list-container .note {
+                font-size: 1.1em;
+            }
+        }
+
+        /* Große Bildschirme (Desktop, größer als 900px) - hier greifen deine Standardwerte */
+        /* Optional könnte man hier auch noch spezifische Styles definieren, wenn die Standardwerte nicht reichen */
+
+        /* Große Bildschirme (Desktop, größer als 900px) - hier greifen deine Standardwerte */
+        /* Optional könnte man hier auch noch spezifische Styles definieren, wenn die Standardwerte nicht reichen */
+
+        /* Große Bildschirme (Desktop, größer als 900px) - hier greifen deine Standardwerte */
+        /* Optional könnte man hier auch noch spezifische Styles definieren, wenn die Standardwerte nicht reichen */
+
+    </style>
+</head>
+<body>
+    <div id="input-section">
+        <h1>Dein Hogwarts-Brief wartet!</h1>
+        <p>Gib deinen Vornamen ein, um deinen persönlichen Brief zu erhalten.</p>
+        <label for="firstName">Dein Vorname:</label>
+        <input type="text" id="firstName" placeholder="Vorname">
+        <button id="generateLetterButton">Brief generieren</button>
+    </div>
+
+    <div id="animation-wrapper">
+        <video id="owl" src="owl.mp4" muted playsinline>
+            Ihr Browser unterstützt den Video-Tag nicht.
+        </video>
+        <div id="closed-envelope">
+            <img src="hogwarts_crest.png" alt="Hogwarts Crest" class="closed-crest">
+            <img src="wax_seal.png" alt="Wax Seal" class="closed-seal">
+        </div>
+        <div class="letter-container">
+            <img src="hogwarts_crest.png" alt="Hogwarts Crest" class="crest">
+            <div class="recipient-address">
+                Mr./Ms. [Recipient Name]<br>
+                [Recipient Street Address]<br>
+                [Recipient City, State/Province, Country]
+            </div>
+            <div class="salutation">
+                Dear Mr./Ms. [Recipient Last Name],
+            </div>
+            <div class="letter-body">
+                We are pleased to inform you that you have been accepted at Hogwarts School of Witchcraft and Wizardry. Please find enclosed a list of all necessary books and equipment. Term begins on September 1. We await your owl no later than July 31.
+            </div>
+            <div class="closing">
+                Yours sincerely,
+            </div>
+            <div class="title">
+                Deputy Headmistress
+            </div>
+            <div class="signature">
+                Minerva McGonagall
+            </div>
+            <img src="wax_seal.png" alt="Wax Seal" class="seal">
+            
+            <button id="continue-to-items-button">Zur Ausrüstungsliste</button>
+        </div>
+    </div>
+
+    <div id="items-list-container">
+        <h2>Benötigte Ausrüstung für Hogwarts<br>Erstes Schuljahr</h2>
+
+        <h3>Uniform</h3>
+        <ul>
+            <li>Drei Garnituren einfacher Arbeitskleidung (schwarz)</li>
+            <li>Ein einfacher Spitzhut (schwarz) für tagsüber</li>
+            <li>Ein Paar Schutzhandschuhe (Drachenhaut oder ähnlich)</li>
+            <li>Ein Winterumhang (schwarz mit silbernen Schnallen)</li>
+        </ul>
+        <p class="note">Bitte beachten Sie, dass alle Kleidungsstücke der Schüler mit Namensschildern versehen sein müssen.</p>
+
+        <h3>Bücher</h3>
+        <ul>
+            <li>Lehrbuch der Zaubersprüche, Band 1 von Miranda Habicht</li>
+            <li>Geschichte der Zauberei von Bathilda Bagshot</li>
+            <li>Theorie der Magie von Adalbert Schwahfel</li>
+            <li>Verwandlungen für Anfänger von Emeric Wendel</li>
+            <li>Tausend Zauberkräuter und -pilze von Phyllida Spore</li>
+            <li>Zaubertränke und Zauberbräue von Arsenius Bunsen</li>
+            <li>Phantastische Tierwesen und wo sie zu finden sind von Newt Scamander</li>
+            <li>Dunkle Kräfte: Ein Kurs zur Selbstverteidigung von Quirin Sumo</li>
+        </ul>
+
+        <h3>Ferner werden benötigt</h3>
+        <ul>
+            <li>1 Zauberstab</li>
+            <li>1 Kessel (Zinn), Normgröße 2</li>
+            <li>1 Sortiment Glas- oder Kristallfläschchen</li>
+            <li>1 Teleskop</li>
+            <li>1 Waage aus Messing</li>
+        </ul>
+
+        <p>Es ist den Schülern zudem freigestellt,</p>
+        <ul>
+            <li>eine Eule ODER eine Katze ODER eine Kröte mitzubringen.</li>
+        </ul>
+        <p class="note">ELTERN SEIEN DARAN ERINNERT, DASS ERSTKLÄSSLER KEINE EIGENEN BESEN BESITZEN DÜRFEN.</p>
+
+        <h3>Für den großen Hogwarts-Filmabend am 30.08.2025</h3>
+        <p>Bitte bringe folgende, unerlässliche Ausrüstungsgegenstände mit, um den Abend zu meistern:</p>
+        <ul>
+            <li><b>Magen-Expander:</b> Für unzählige Zauberbohnen, Bertie Botts Bohnen und Süßigkeiten.</li>
+            <li><b>Bequemer Umhang und Filmkleidung:</b> Gemütlichkeit ist Pflicht, um so viele Hogwarts-Jahre wie möglich zu durchleben.</li>
+            <li><b>Trank der Ausdauer:</b> Um die stundenlange Magie, Freundschaft und dunkle Künste zu überstehen. (Kaffee, Tee oder Alkohol sind erlaubt!)</li>
+            <li><b>Dein Hausgeist:</b> Ob Gryffindor-Mut, Hufflepuff-Treue, Ravenclaw-Weisheit oder Slytherin-Ehrgeiz – wir brauchen sie alle!</li>
+            <li><b>Spaß:</b> Das Wichtigste! Bereite dich auf Gänsehaut, Lachtränen und magische Momente vor. Bonus-Punkte für jeden, der das "Zauberer-Schach" ohne Anleitung versteht!</li>
+        </ul>
+        <p>Bereite dich vor auf eine Nacht voller Abenteuer, denn wir schauen so viele Harry-Potter-Filme wie möglich in einer epischen Sitzung!</p>
+        <p>Wir freuen uns auf den gemeinsamen Abend</p>
+    </div>
+
+    <script>
+        const animationWrapper = document.getElementById('animation-wrapper');
+        const closedEnvelope = document.getElementById('closed-envelope');
+        const owlVideo = document.getElementById('owl');
+        const inputSection = document.getElementById('input-section');
+        const generateLetterButton = document.getElementById('generateLetterButton');
+        const continueToItemsButton = document.getElementById('continue-to-items-button'); // Neuer Button
+
+        const recipientAddressElement = document.querySelector('.recipient-address');
+        const salutationElement = document.querySelector('.salutation');
+        const itemsListContainer = document.getElementById('items-list-container'); // Neuer Container
+
+        let letterGenerated = false;
+
+        function updateLetterContent() {
+            const firstName = document.getElementById('firstName').value.trim(); // .trim() entfernt Leerzeichen am Anfang/Ende
+            let lastName = "";
+            let streetAddress = "";
+            let cityCountry = "";
+            let salutation = "Mr./Ms."; // Standard-Anrede
+
+            // Alle Eingaben in Kleinbuchstaben umwandeln, um Groß-/Kleinschreibung zu ignorieren
+            const lowerCaseFirstName = firstName.toLowerCase(); 
+
+            // --- HIER PASST DU DEINE DATEN PRO NAMEN AN ---
+            if (lowerCaseFirstName === "daniel") {
+                lastName = "Müller";
+                streetAddress = "Ligusterweg 4";
+                cityCountry = "Little Whinging, Surrey, England";
+                salutation = "Mr.";
+            } else if (lowerCaseFirstName === "andreas") { // Du kannst auch "hermione" für die englische Schreibweise hinzufügen
+                lastName = "Bauer";
+                streetAddress = "Ligusterweg 4";
+                cityCountry = "Little Whinging, Surrey, England";
+                salutation = "Mr.";
+            } else if (lowerCaseFirstName === "franzi") {
+                lastName = "Holderried";
+                streetAddress = "Ligusterweg 4";
+                cityCountry = "Little Whinging, Surrey, England";
+                salutation = "Ms.";
+            } else if (lowerCaseFirstName === "franziska") {
+                lastName = "Holderried";
+                streetAddress = "Ligusterweg 4";
+                cityCountry = "Little Whinging, Surrey, England";
+                salutation = "Ms.";
+            } else if (lowerCaseFirstName === "lisa s") {
+                lastName = "Waldner";
+                streetAddress = "Ligusterweg 4";
+                cityCountry = "Little Whinging, Surrey, England";
+                salutation = "Ms.";
+            } else if (lowerCaseFirstName === "luisa") {
+                lastName = "Eibl";
+                streetAddress = "Ligusterweg 4";
+                cityCountry = "Little Whinging, Surrey, England";
+                salutation = "Ms.";
+            } else if (lowerCaseFirstName === "miri") {
+                lastName = "Eibl";
+                streetAddress = "Ligusterweg 4";
+                cityCountry = "Little Whinging, Surrey, England";
+                salutation = "Ms.";
+            } else if (lowerCaseFirstName === "mirjam") {
+                lastName = "Eibl";
+                streetAddress = "Ligusterweg 4";
+                cityCountry = "Little Whinging, Surrey, England";
+                salutation = "Ms.";
+            } else if (lowerCaseFirstName === "lisa") {
+                lastName = "Schlichting";
+                streetAddress = "Ligusterweg 4";
+                cityCountry = "Little Whinging, Surrey, England";
+                salutation = "Ms.";
+            } else if (lowerCaseFirstName === "martin") {
+                lastName = "Kaufmann";
+                streetAddress = "Ligusterweg 4";
+                cityCountry = "Little Whinging, Surrey, England";
+                salutation = "Mr.";
+            }
+            // Füge hier weitere `else if`-Blöcke für andere Namen hinzu
+            else {
+                // Standardwerte, wenn der Name nicht erkannt wird oder leer ist
+                lastName = "[Dein Nachname]"; 
+                streetAddress = "[Deine Straße und Hausnummer]";
+                cityCountry = "[Dein Ort, Land]";
+                salutation = "Mr./Ms."; 
+            }
+            // ------------------------------------
+
+            const fullName = `${firstName} ${lastName}`;
+
+            recipientAddressElement.innerHTML = `${salutation} ${fullName}<br>${streetAddress}<br>${cityCountry}`;
+            salutationElement.innerHTML = `Dear ${salutation} ${lastName},`;
+        }
+
+        generateLetterButton.addEventListener('click', () => {
+            updateLetterContent(); // Briefinhalt aktualisieren
+            inputSection.style.display = 'none'; // Eingabemaske ausblenden
+            animationWrapper.classList.add('is-visible'); // Animation-Wrapper sichtbar machen
+            owlVideo.play(); // Eulen-Video starten
+            letterGenerated = true;
+        });
+
+        owlVideo.addEventListener('ended', () => {
+            owlVideo.style.opacity = '0';
+            owlVideo.style.pointerEvents = 'none'; // Verhindert Klicks auf das unsichtbare Video
+            
+            if (letterGenerated) {
+                closedEnvelope.classList.add('is-ready');
+            }
+        });
+
+        closedEnvelope.addEventListener('click', () => {
+            if (closedEnvelope.classList.contains('is-ready') && !animationWrapper.classList.contains('is-open')) {
+                animationWrapper.classList.add('is-open');
+                // Wenn der Brief vollständig geöffnet ist, zeige den "Weiter"-Button
+                setTimeout(() => { // Gib der Öffnungsanimation etwas Zeit
+                    continueToItemsButton.classList.add('is-visible');
+                }, 1500); // Passt zur transition Dauer von letter-container
+            }
+        });
+
+        // Event Listener für den neuen "Zur Ausrüstungsliste"-Button
+        continueToItemsButton.addEventListener('click', () => {
+            animationWrapper.style.opacity = '0'; // Verstecke den Brief-Container
+            animationWrapper.style.pointerEvents = 'none'; // Deaktiviere Interaktionen mit dem Brief
+            itemsListContainer.classList.add('is-visible'); // Zeige die neue Liste an
+            continueToItemsButton.classList.remove('is-visible'); // Verstecke den Button wieder
+        });
+        
+        // Initialisiere den Briefinhalt beim Laden der Seite (falls gewünscht, obwohl er erst nach Eingabe sichtbar wird)
+        // updateLetterContent(); 
+    </script>
+</body>
+</html>
